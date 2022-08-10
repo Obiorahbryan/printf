@@ -8,38 +8,44 @@
  */
 int _printf(const char *format, ...)
 {
-	int (*pfunc)(va_list, flags_t *);
-	const char *p;
-	va_list arguments;
-	flags_t flags = {0, 0, 0};
+	int how_many = 0;
+	const char *pf;
+	int (*f)();
+	char *buffer = buffer_init();
+	va_list args;
 
-	register int count = 0;
-
-	va_start(arguments, format);
-	if (!format || (format[0] == '%' && !format[1]))
-		return (-1);
-	if (format[0] == '%' && format[1] == ' ' && !format[2])
-		return (-1);
-	for (p = format; *p; p++)
+	va_start(args, format);
+	if (!buffer)
+		return (0);
+	if (!format || (format[0] == '%' && format[1] == '\0'))
 	{
-		if (*p == '%')
-		{
-			p++;
-			if (*p == '%')
-			{
-				count += _putchar('%');
-				continue;
-			}
-			while (get_flag(*p, &flags))
-				p++;
-			pfunc = get_print(*p);
-			count += (pfunc)
-				? pfunc(arguments, &flags)
-				: _printf("%%%c", *p);
-		} else
-			count += _putchar(*p);
+		free(buffer);
+		return (-1);
 	}
-	_putchar(-1);
-	va_end(arguments);
-	return (count);
+	for (pf = format; *pf; pf++)
+	{
+		if (*pf == '%')
+		{
+			f = verify_format(pf);
+			if (f)
+			{
+				how_many += f(args, buffer);
+				pf++;
+			}
+			else
+			{
+				_putchar(buffer, *pf);
+				how_many++;
+			}
+		}
+		else
+		{
+			_putchar(buffer, *pf);
+			how_many++;
+		}
+	}
+	va_end(args);
+	buffer_print(buffer, buffer_pos(buffer));
+	free(buffer);
+	return (how_many);
 }
